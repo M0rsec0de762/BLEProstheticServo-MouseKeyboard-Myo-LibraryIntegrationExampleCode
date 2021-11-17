@@ -19,11 +19,11 @@ void modeISR();
 ----------------------------------
 */
 // myo output global
-uint8_t output;
-// Globals for LED and button pins
-const int buttonModePin = 15;  
-const int ledGreenPin =  27;  
-const int ledBluePin = 26;
+float output;
+//// Globals for LED and button pins
+//const int buttonModePin = 15;  
+//const int ledGreenPin =  27;  
+//const int ledBluePin = 26;
 // Globals that will control button interrupts and corresponding for-loop functionality
 volatile byte modeState = 0;
 volatile byte modeTrigger = LOW;
@@ -48,53 +48,64 @@ void setup()
   while(status != 0)
     Serial.println("Cant connect to MPU");
   Serial.println("Initializing Successful!"); 
-  // Initialize LED pins for Mode Status
-  pinMode(ledGreenPin, OUTPUT);
-  pinMode(ledBluePin, OUTPUT);
-  // Initialize the pushbutton pins as interrupt inputs:
-  pinMode(buttonModePin, INPUT);
-  attachInterrupt(digitalPinToInterrupt(buttonModePin), modeISR, HIGH);
+//  // Initialize LED pins for Mode Status
+//  pinMode(ledGreenPin, OUTPUT);
+//  pinMode(ledBluePin, OUTPUT);
+//  // Initialize the pushbutton pins as interrupt inputs:
+//  pinMode(buttonModePin, INPUT);
+//  attachInterrupt(digitalPinToInterrupt(buttonModePin), modeISR, HIGH);
   /*Init servo 1 */
-  Serial.println("Initializing Servo 1");
-  testServo1.z_servo_pin = 14;  
-  testServo1.z_servo_micro_open = 2500;
-  testServo1.z_servo_micro_closed = 500;
-  testServo1.z_servo_micro_max = 2500;
-  testServo1.z_servo_micro_min = 500;
-  testServo1.z_MOSFET_pin = 32;
-  testServo1.z_servo_speed = 210;
-  testServo1.servoInit();
-  Serial.println("Initializing Successful!");
-  /*Init servo 2 */
-  Serial.println("Initializing Servo 2");
-  testServo2.z_servo_pin = 5;
-  testServo2.z_servo_micro_open = 2500;
-  testServo2.z_servo_micro_closed = 500;
-  testServo2.z_servo_micro_max = 2500;
-  testServo2.z_servo_micro_min = 500;
-  testServo2.z_MOSFET_pin = 33;
-  testServo2.z_servo_speed = 210;
-  testServo2.servoInit();
-  Serial.println("Initializing Successful!");
+//  Serial.println("Initializing Servo 1");
+//  testServo1.z_servo_pin = 14;  
+//  testServo1.z_servo_micro_open = 2500;
+//  testServo1.z_servo_micro_closed = 500;
+//  testServo1.z_servo_micro_max = 2500;
+//  testServo1.z_servo_micro_min = 500;
+//  testServo1.z_MOSFET_pin = 32;
+//  testServo1.z_servo_speed = 210;
+//  testServo1.servoInit();
+//  Serial.println("Initializing Successful!");
+//  /*Init servo 2 */
+//  Serial.println("Initializing Servo 2");
+//  testServo2.z_servo_pin = 5;
+//  testServo2.z_servo_micro_open = 2500;
+//  testServo2.z_servo_micro_closed = 500;
+//  testServo2.z_servo_micro_max = 2500;
+//  testServo2.z_servo_micro_min = 500;
+//  testServo2.z_MOSFET_pin = 33;
+//  testServo2.z_servo_speed = 210;
+//  testServo2.servoInit();
+//  Serial.println("Initializing Successful!");
   myoTest.setupMyo();
   Serial.println("Init Sequence Complete"); 
 }
 
 void loop() 
 {
-  if(modeTrigger)
-  {
-    modeState = modeState + 1;
-    if(modeState >= 3)
-      modeState = 0;
-    modeTrigger = LOW;
-  }
+    /*Test MPU6050 State Change Mechanic*/\
+    Test.comboMPU.update();
+    output = Test.comboMPU.getAccZ();
+    if(output <= -1)
+      {
+        Serial.print("Sneed ");
+        while(output <= -0.1)
+        {
+          Test.comboMPU.update();
+          output = Test.comboMPU.getAccZ();
+        }
+        Serial.print("Feed ");
+        modeState++;
+        if(modeState >=2)
+          modeState = 0;
+        Serial.println(modeState);
+      }
   switch (modeState)
   {
     /*Keyboard State*/
     case 0:
-      digitalWrite(ledGreenPin, HIGH);
-      digitalWrite(ledBluePin, LOW);
+//      digitalWrite(ledGreenPin, HIGH);
+//      digitalWrite(ledBluePin, LOW);
+      Serial.println("Keyboard State");
       myoTest.bluetoothGestureSequence(myoTest.buff);
       Serial.print(myoTest.buff[0]);
       Serial.print(myoTest.buff[1]);
@@ -108,8 +119,9 @@ void loop()
     break;
     /*Mouse State*/
     case 1:
-      digitalWrite(ledGreenPin, LOW);
-      digitalWrite(ledBluePin, HIGH);
+//      digitalWrite(ledGreenPin, LOW);
+//      digitalWrite(ledBluePin, HIGH);
+      Serial.println("Mouse State");
       output = myoTest.debounceMyoPredictions();
       myoTest.lockState(output);
       if(Test.comboKeyboard.isConnected())
@@ -130,40 +142,40 @@ void loop()
       }
       else;
     break;
-    /*Arm State*/
-    case 2:
-      digitalWrite(ledGreenPin, HIGH);
-      digitalWrite(ledBluePin, HIGH);
-      output = myoTest.debounceMyoPredictions();
-      myoTest.lockState(output);
-      if(output == 1)
-      {
-        testServo1.servoOpen();
-        testServo2.servoOpen();
-      }
-      else if(output == 2)
-      {
-        testServo1.servoOpen();
-        testServo2.servoClosed();
-      }
-      else if(output == 3)
-      {
-        testServo1.servoClosed();
-        testServo2.servoOpen();
-      }
-      else if(output == 4)
-      {
-        testServo1.servoClosed();
-        testServo2.servoClosed();
-      }
-      else;
-      Serial.println(output);
-      delay(100);
-        
-      break;
-    default:
-      Serial.println("Unintended State. Please Check Source Code.");
-      delay(1000);
+//    /*Arm State*/
+//    case 2:
+//      digitalWrite(ledGreenPin, HIGH);
+//      digitalWrite(ledBluePin, HIGH);
+//      output = myoTest.debounceMyoPredictions();
+//      myoTest.lockState(output);
+//      if(output == 1)
+//      {
+//        testServo1.servoOpen();
+//        testServo2.servoOpen();
+//      }
+//      else if(output == 2)
+//      {
+//        testServo1.servoOpen();
+//        testServo2.servoClosed();
+//      }
+//      else if(output == 3)
+//      {
+//        testServo1.servoClosed();
+//        testServo2.servoOpen();
+//      }
+//      else if(output == 4)
+//      {
+//        testServo1.servoClosed();
+//        testServo2.servoClosed();
+//      }
+//      else;
+//      Serial.println(output);
+//      delay(100);
+//        
+//      break;
+//    default:
+//      Serial.println("Unintended State. Please Check Source Code.");
+//      delay(1000);
   }
 }
 /*
@@ -180,7 +192,7 @@ void emgCallback(BLERemoteCharacteristic* pBLERemoteCharacteristic, uint8_t* pDa
 -----ISR Test Function Initializations-----
 ----------------------------------
 */
-void modeISR()
-{
-  modeTrigger = HIGH;
-}
+//void modeISR()
+//{
+//  modeTrigger = HIGH;
+//}
